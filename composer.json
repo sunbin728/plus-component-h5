@@ -25,5 +25,8 @@
                 "Zhiyi\\Component\\ZhiyiPlus\\PlusComponentH5\\ServiceProvider"
             ]
         }
+    },
+    "require": {
+        "zhiyicx/plus-component-im": "^2.0"
     }
 }
