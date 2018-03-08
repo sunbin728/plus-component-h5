@@ -8,11 +8,7 @@
   <meta name="description" content="{{ $siteDescription }}">
   <title>{{ $siteName }}</title>
   <script src="{{ $jssdkAmap }}"></script>
-  @if($ssl) 
-    <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css?v=20171120" rel="stylesheet">
-  @else
-    <link href="http://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css?v=20171120" rel="stylesheet">
-  @endif
+  <link href="//cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css?v=20171120" rel="stylesheet">
   <link rel="stylesheet" href="{{ mix('css/app.css', 'assets/h5') }}?v=20171120" />
   <style>
     /*********************** markdown 样式重构 *******************/
