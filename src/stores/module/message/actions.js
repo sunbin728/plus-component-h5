@@ -1,6 +1,18 @@
 import http from "@/http";
+import lstore from "@/plugins/lstore/lstore.js";
 import getMessageUnameTxt from "@/util/getMessageUnameTxt";
 export default {
+  GET_NEW_UNREAD_COUNT({ rootState, commit }) {
+    if (!rootState.CURRENTUSER || !rootState.CURRENTUSER.token) return;
+    http
+      .get("/user/counts", {
+        validateStatus: status => status === 200
+      })
+      .then(({ data: { user = {} } = {} }) => {
+        commit("SAVE_NEW_UNREAD_COUNT", user);
+      });
+  },
+
   /**
    * 获取未读信息数量
    * @Author   Wayne
@@ -10,13 +22,14 @@ export default {
    */
   GET_UNREAD_COUNT({ rootState, commit }) {
     // console.log(rootState);
-    if (!rootState.CURRENTUSER || !rootState.CURRENTUSER.token) return;
+    if (!rootState.CURRENTUSER || !lstore.hasData("H5_ACCESS_TOKEN")) return;
     let options = {};
     let cPlaceholder = "还没有人评论过你";
     let dPlaceholder = "还没有人赞过你";
-    let aPlaceholder = "暂无未审核的申请";
+    let sPlaceholder = "暂无系统通知";
     let cTime = "";
     let dTime = "";
+    let sTime = "";
     http
       .get("/user/unread-count", {
         validataStatus: status => status === 200
@@ -39,33 +52,32 @@ export default {
         } =
           data.pinneds || {};
 
-        if (data.comments.length > 0) {
+        if ((data.comments || []).length > 0) {
           let plsh = getMessageUnameTxt(data.comments);
           cPlaceholder = plsh.placeholder + "评论了我";
           cTime = plsh.time;
         }
 
-        if (data.likes.length > 0) {
+        if ((data.likes || []).length > 0) {
           let plsh = getMessageUnameTxt(data.likes);
           dPlaceholder = plsh.placeholder + "赞了我";
           dTime = plsh.time;
         }
 
-        if (
-          newsCount +
-            feedsCount +
-            groupComments +
-            unReadGroupJoinCount +
-            groupPosts >
-          0
-        ) {
-          aPlaceholder = "你有未处理的审核申请";
+        if (Object.keys(data.system || {}).length > 0) {
+          sPlaceholder = data.system.data.content;
+          sTime = data.system.created_at;
         }
 
         options = {
           ...options,
           ...{
             msg: {
+              system: {
+                count: 0,
+                placeholder: sPlaceholder,
+                time: sTime
+              },
               comments: {
                 count: unReadCommentsCount,
                 lastUsers: data.comments,
@@ -79,7 +91,6 @@ export default {
                 time: dTime
               },
               audits: {
-                placeholder: aPlaceholder,
                 newsCommentCount: newsCount,
                 feedCommentCount: feedsCount,
                 groupPostCommentCount: groupComments,

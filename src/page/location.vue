@@ -1,7 +1,8 @@
 <template>
   <transition
   enter-active-class="animated slideInRight"
-  leave-active-class="animated slideOutLeft">
+  leave-active-class="animated slideOutLeft"
+  v-if="show">
     <div class="m-box-model m-pos-f p-location">
       <header class="m-pos-f m-box m-aln-center m-justify-bet m-main m-bb1">
         <div class="m-flex-grow1 m-flex-shrink1 m-flex-base0">
@@ -9,7 +10,15 @@
             <svg class="m-style-svg m-svg-def">
               <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#base-search"></use>
             </svg>
-            <input @focus="onFocus" @blur="onBlur" v-model="keyword" @input="searchCityByKey" type="search" placeholder="搜索">
+            <form action="#" onsubmit="return false">
+              <input 
+                @focus="onFocus"
+                @blur="onBlur"
+                v-model="keyword"
+                @input="searchCityByName"
+                type="search"
+                placeholder="搜索">
+            </form>
           </div>
         </div>
         <div class="m-flex-grow0 m-flex-shrink0">
@@ -39,7 +48,14 @@
             </ul>
           </div>
         </div>
-
+        <div v-else class="m-box-model">
+          <div class="m-box m-aln-center m-bb1 m-main city-item" 
+          v-for="city in cities"
+          :key="city"
+          @click="selectedHot(city.slice(city.lastIndexOf(`，`)))">
+            <span class="m-text-cut">{{ city }}</span>
+          </div>
+        </div>
       </main>
     </div>
   </transition>
@@ -49,11 +65,22 @@
 import {
   getGeo,
   getHotCities,
+  searchCityByName,
   getCurrentPosition
 } from "@/api/bootstrappers.js";
 import _ from "lodash";
 export default {
   name: "location",
+  props: {
+    show: {
+      type: Boolean,
+      default: true
+    },
+    isComponent: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       keyword: "",
@@ -62,7 +89,8 @@ export default {
       autoPos: {},
       hotPos: {},
       isFocus: false,
-      placeholder: "未定位"
+      placeholder: "未定位",
+      cities: []
     };
   },
   computed: {
@@ -83,18 +111,40 @@ export default {
       },
       set(val) {
         this.autoPos = val;
+        this.$store.commit("SAVE_H5_POSITION", val);
       }
     }
   },
-  watch: {
-    currentPos(val) {
-      val && val.label && this.$lstore.setData("H5_CURRENT_POSITION", val);
-    }
-  },
   methods: {
-    onFocus() {},
-    onBlur() {},
-    searchCityByKey: _.throttle(() => {}, 1e3),
+    goBack() {
+      this.isComponent
+        ? this.$emit("close", this.currentPos)
+        : this.$router.go(-1);
+    },
+    onFocus() {
+      this.isFocus = true;
+    },
+    onBlur() {
+      this.isFocus = false;
+    },
+    formatCities(cities) {
+      return Array.isArray(cities)
+        ? cities.map(city => {
+            let name = "";
+            city = city.tree;
+            while (city) {
+              name = city.name + "，" + name;
+              city = city.parent;
+            }
+            return name.substr(0, name.length - 1);
+          })
+        : [];
+    },
+    searchCityByName: _.throttle(function() {
+      searchCityByName(this.keyword).then(({ data = [] }) => {
+        this.cities = this.formatCities(data);
+      });
+    }, 1e3),
     getCurrentPosition() {
       this.loading = true;
       this.hotPos = null;
@@ -102,7 +152,7 @@ export default {
       this.placeholder = "定位中...";
       getCurrentPosition().then(
         data => {
-          this.autoPos = data;
+          this.currentPos = data;
           this.loading = false;
         },
         err => {
@@ -118,8 +168,8 @@ export default {
       this.loading = true;
       getGeo(city.replace(/[\s\uFEFF\xA0]+/g, "")).then(data => {
         this.loading = false;
-        this.hotPos = data;
-        this.goBack();
+        this.currentPos = data;
+        this.$nextTick(this.goBack);
       });
     }
   },
@@ -192,6 +242,10 @@ export default {
       background-color: #f4f5f6;
       font-size: 28px;
     }
+  }
+  .city-item {
+    padding: 40px;
+    font-size: 30px;
   }
 }
 </style>

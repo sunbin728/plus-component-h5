@@ -21,8 +21,6 @@
   </div>
 </template>
 <script>
-import HeadTop from "../../components/HeadTop";
-import FootGuide from "../../components/FootGuide";
 import { mapState } from "vuex";
 const prefixCls = "message";
 export default {
@@ -36,25 +34,30 @@ export default {
     ...mapState({
       // 新消息提示
       has_msg: state =>
-        state.MESSAGE.UNREAD_COUNT.msg.diggs.count +
-          state.MESSAGE.UNREAD_COUNT.msg.comments.count +
-          state.MESSAGE.UNREAD_COUNT.msg.audits.feedCommentCount +
-          state.MESSAGE.UNREAD_COUNT.msg.audits.groupJoinCount +
-          state.MESSAGE.UNREAD_COUNT.msg.audits.groupPostCommentCount +
-          state.MESSAGE.UNREAD_COUNT.msg.audits.groupPostCount +
-          state.MESSAGE.UNREAD_COUNT.msg.audits.newsCommentCount >
+        state.MESSAGE.NEW_UNREAD_COUNT.commented +
+          state.MESSAGE.NEW_UNREAD_COUNT["feed-comment-pinned"] +
+          state.MESSAGE.NEW_UNREAD_COUNT["group-join-pinned"] +
+          state.MESSAGE.NEW_UNREAD_COUNT.liked +
+          state.MESSAGE.NEW_UNREAD_COUNT["news-comment-pinned"] +
+          state.MESSAGE.NEW_UNREAD_COUNT["post-comment-pinned"] +
+          state.MESSAGE.NEW_UNREAD_COUNT["post-pinned"] +
+          state.MESSAGE.NEW_UNREAD_COUNT.system >
         0,
+      // state.MESSAGE.UNREAD_COUNT.msg.diggs.count +
+      //   state.MESSAGE.UNREAD_COUNT.msg.comments.count +
+      //   state.MESSAGE.UNREAD_COUNT.msg.audits.feedCommentCount +
+      //   state.MESSAGE.UNREAD_COUNT.msg.audits.groupJoinCount +
+      //   state.MESSAGE.UNREAD_COUNT.msg.audits.groupPostCommentCount +
+      //   state.MESSAGE.UNREAD_COUNT.msg.audits.groupPostCount +
+      //   state.MESSAGE.UNREAD_COUNT.msg.audits.newsCommentCount >
+      // 0,
       unread_chat: state => state.MESSAGE.UNREAD_COUNT.notification
     })
   },
-  methods: {},
   // 挂载完成后,请求新的消息
   beforeMount() {
     this.$store.dispatch("GET_UNREAD_COUNT");
-  },
-  components: {
-    HeadTop,
-    FootGuide
+    this.$store.dispatch("GET_NEW_UNREAD_COUNT");
   }
 };
 </script>

@@ -3,13 +3,26 @@ const feedDetail = () =>
   import(/* webpackChunkName: 'feed' */ "../page/feed/feedDetail");
 export default [
   {
-    path: "/feed/:feedID(\\d+)",
-    component: feedDetail,
-    meta: { title: "动态详情", keepAlive: true }
+    name: "feeds",
+    path: "/feeds",
+    component: feed,
+    meta: {
+      title: "动态",
+      keepAlive: true
+    },
+    beforeEnter(to, from, next) {
+      const type = to.query.type;
+      type
+        ? next()
+        : next({
+            name: "feeds",
+            query: { type: "new" }
+          });
+    }
   },
   {
-    path: "/feed/:type",
-    component: feed,
-    meta: { title: "动态", keepAlive: true }
+    path: "/feeds/:feedID(\\d+)",
+    component: feedDetail,
+    meta: { title: "动态详情", keepAlive: true }
   }
 ];

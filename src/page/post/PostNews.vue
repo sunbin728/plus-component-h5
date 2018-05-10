@@ -28,11 +28,11 @@
           key="step1"
           class="m-pos-f m-box-model m-flex-grow1 m-flex-shrink1 m-justify-center m-aln-center m-main" style="padding-left: 0.3rem; padding-right: 0.3rem">
           <div class="m-box m-flex-grow0 m-shrink0 m-bb1 m-lim-width m-post-news-title">
-            <input class="m-lim-width" maxlength="20" v-model="news.title" type="text" placeholder="输入标题，20字以内">
+            <input class="m-lim-width" maxlength="20" v-model.trim="news.title" type="text" placeholder="输入标题，20字以内">
           </div>
           <div class="m-box-model m-flex-grow1 m-flex-shrink1 m-lim-width m-post-news-content">
             <textarea
-              v-model='contentText'
+              v-model.trim='contentText'
               placeholder="编辑文章正文"
               ref='textarea'></textarea>
           </div>
@@ -68,19 +68,19 @@
           <div class="m-box m-aln-center m-lim-width m-post-news-row m-main m-bb1">
             <span class="m-post-news-row-label">文章来源</span>
             <div class="m-box m-flex-grow1 m-flex-shrink1 m-aln-center m-justify-end">
-              <input type="text" dir="rtl" placeholder="不填写则默认为原创">
+              <input type="text" v-model.trim="news.from" dir="rtl" placeholder="不填写则默认为原创">
             </div>
           </div>
           <div class="m-box m-aln-center m-lim-width m-post-news-row m-main m-bb1">
             <span class="m-post-news-row-label">作者</span>
             <div class="m-box m-flex-grow1 m-flex-shrink1 m-aln-center m-justify-end">
-              <input type="text" dir="rtl" placeholder="不填写则默认为本站用户名">
+              <input type="text" v-model.trim="news.author" dir="rtl" placeholder="不填写则默认为本站用户名">
             </div>
           </div>
           <div class="m-box m-aln-center m-lim-width m-post-news-row m-main">
             <span class="m-post-news-row-label">摘要</span>
             <div class="m-box m-flex-grow1 m-flex-shrink1 m-aln-center m-justify-end">
-              <input type="text" dir="rtl" placeholder="请输入摘要信息">
+              <input type="text" v-model.trim="news.subject" dir="rtl" placeholder="请输入摘要信息">
             </div>
           </div>
         </div>
@@ -122,7 +122,7 @@
               @change="selectPhoto">
           </div>
           <p>不上传封面则默认为文章内第一张图</p>
-          <button class="m-long-btn m-signin-btn" @click="handleOk">支付并发布文章</button>
+          <button class="m-long-btn m-signin-btn" @click="handleOk">{{ this.newsPay ? '支付并发布资讯' : '发布资讯' }}</button>
         </div>
       </template>
     </transition-group>
@@ -131,12 +131,19 @@
 </template>
 <script>
 import bus from "@/bus.js";
+import { mapState } from "vuex";
 import sendImage from "@/util/SendImage.js";
 import chooseCate from "@/page/chooseCate.vue";
 export default {
   name: "post-news",
   components: {
     chooseCate
+  },
+  created() {
+    if (!this.canPostNews) {
+      this.$Message.error("请先进行身份认证");
+      this.$router.go(-1);
+    }
   },
   data() {
     return {
@@ -161,6 +168,21 @@ export default {
     };
   },
   computed: {
+    ...mapState({
+      newsPay: state => state.CONFIG["news:contribute"].pay,
+      newCurrency: state => state.CONFIG["news:pay_conyribute"],
+      newsVerified: state => state.CONFIG["news:contribute"].verified,
+      verified: state => state.CURRENTUSER.verified
+    }),
+    currency_name() {
+      return (
+        (((this.$store.state.CONFIG || {}).site || {}).currency_name || {})
+          .name || "积分"
+      );
+    },
+    canPostNews() {
+      return !this.newsVerified || (this.newsVerified && this.verified);
+    },
     contentText: {
       get() {
         return this.news.content;
@@ -268,6 +290,24 @@ export default {
     posterError() {
       this.$Message.error("封面图上传失败, 请重试");
     },
+    handlePostNews(param) {
+      this.news.form && (param.form = this.news.form);
+      this.poster.id > 0 && (param.image = this.poster.id);
+      this.news.author && (param.author = this.news.author);
+      this.news.subject && (param.subject = this.news.subject);
+
+      // POST /news/categories/:category/news
+      this.$http
+        .post(`/news/categories/${this.category.id}/news`, param)
+        .then(({ data }) => {
+          this.$Message.success(data);
+          this.goBack();
+        })
+        .catch(err => {
+          console.log(err);
+          this.$Message.error("发生了一些错误");
+        });
+    },
     handleOk() {
       const { title, content } = this.news;
       if (!(title && content))
@@ -277,38 +317,25 @@ export default {
       if (this.tags.length === 0) {
         return this.$Message.error("请选择标签"), (this.step = 2);
       }
-
-      bus.$emit("payfor", {
-        title: "投稿支付",
-        amount: 20,
-        content: "本次投稿您需要支付20.00金币是否继续投稿？",
-        confirmText: "确认投稿",
-        cancelText: "暂不考虑",
-        onOk: () => {
-          const param = {
-            title,
-            content,
-            tags: this.tags.map(t => t.id).join(",")
-          };
-
-          this.news.form && (param.form = this.news.form);
-          this.poster.id > 0 && (param.image = this.poster.id);
-          this.news.author && (param.author = this.news.author);
-          this.news.subject && (param.subject = this.news.subject);
-
-          // POST /news/categories/:category/news
-          this.$http
-            .post(`/news/categories/${this.category.id}/news`, param)
-            .then(({ data }) => {
-              this.$Message.success(data);
-              this.goBack();
-            })
-            .catch(err => {
-              console.log(err);
-              this.$Message.error("发生了一些错误");
-            });
-        }
-      });
+      const param = {
+        title,
+        content,
+        tags: this.tags.map(t => t.id).join(",")
+      };
+      this.newsPay
+        ? bus.$emit("payfor", {
+            title: "投稿支付",
+            amount: this.newCurrency,
+            content: `本次投稿您需要支付${this.newCurrency}${
+              this.currency_name
+            },是否继续投稿？`,
+            confirmText: "确认投稿",
+            cancelText: "暂不考虑",
+            onOk: () => {
+              this.handlePostNews(param);
+            }
+          })
+        : this.handlePostNews(param);
     },
     preStep() {
       this.step > 1 &&

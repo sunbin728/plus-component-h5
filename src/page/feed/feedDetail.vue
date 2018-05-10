@@ -7,26 +7,29 @@
   @on-more="moreAction"
   @on-comment="commentFeed"
   >
-  <header slot="head" class="m-box m-justify-bet m-aln-center">
+  <header slot="head" class="m-box m-justify-bet m-aln-center m-art-head" style="padding: 0">
     <div class="m-box m-flex-grow1 m-aln-center m-flex-base0">
       <svg class='m-style-svg m-svg-def' @click='goBack'>
         <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#base-back"></use>
       </svg>
     </div>
-    <div class="m-box-model m-flex-grow1 m-aln-center m-flex-base0 m-head-top-title">
+    <div class="m-box m-flex-grow1 m-aln-center m-flex-base0 m-head-top-title m-text-cut">
       <avatar :user="user" />
+      <span 
+      class="m-text-cut m-flex-grow1 m-flex-shrink1" 
+      style="font-size: 0.32rem; margin-left: 0.1rem">{{ user.name }}</span>
     </div>
     <div class="m-box m-flex-grow1 m-aln-center m-flex-base0 m-justify-end">
-      <svg v-if="!isWechat" class='m-style-svg m-svg-def'>
+      <!-- <svg v-if="!isWechat" class='m-style-svg m-svg-def'>
         <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#base-share"></use>
-      </svg>
+      </svg> -->
     </div>
   </header>
   <!-- 内容 -->
   <main class="m-flex-shrink1 m-flex-grow1 m-art m-main">
     <div class="m-art-body">
       <video
-        v-if="feed.video"
+        v-if="!!video"
         class="feed-detail-video"
         controls
         autoplay
@@ -45,7 +48,7 @@
           :src="props.src">
           />
       </async-file>
-      <p class="m-text-box" v-html="replaceURI(feedContent)"></p>
+      <p class="m-text-box" v-html="formatBody(feedContent)"></p>
     </div>
     <div class="m-box m-aln-center m-justify-bet m-art-foot">
       <div class="m-flex-grow1 m-flex-shrink1 m-box m-aln-center m-art-like-list">
@@ -71,7 +74,7 @@
     <!-- todo 打赏功能 -->
     <div class="m-box-model m-box-center m-box-center-a m-art-reward">
       <button class="m-art-rew-btn" @click="rewardFeed">打 赏</button>
-      <p class="m-art-rew-label"><a href="javascript:;">{{ reward.count | formatNum }}</a>人打赏，共<a href="javascript:;">{{ ~~(reward.amount)/100 }}</a>元</p>
+      <p class="m-art-rew-label"><a href="javascript:;">{{ reward.count | formatNum }}</a>人打赏，共<a href="javascript:;">{{ (~~(reward.amount)/100).toFixed(2) }}</a>元</p>
       <ul class="m-box m-aln-center m-art-rew-list">
         <li 
         :key="rew.id"
@@ -111,10 +114,11 @@
 </template>
 <script>
 import bus from "@/bus.js";
-import Wx from "weixin-js-sdk";
-import wx from "@/util/share.js";
 import ArticleCard from "@/page/article/ArticleCard.vue";
 import CommentItem from "@/page/article/ArticleComment.vue";
+import wechatShare from "@/util/wechatShare.js";
+import { limit } from "@/api/api.js";
+import { getFeedComments } from "@/api/feeds.js";
 
 export default {
   name: "feed-detail",
@@ -135,39 +139,21 @@ export default {
 
       fetchComing: false,
       noMoreCom: false,
-      maxComId: 0,
-      config: {
-        appid: "",
-        signature: "",
-        timestamp: "",
-        noncestr: ""
-      },
-      appList: [
-        "onMenuShareQZone",
-        "onMenuShareQQ",
-        "onMenuShareAppMessage",
-        "onMenuShareTimeline"
-      ],
-      share: {
-        title: "",
-        desc: "",
-        link: ""
-      }
+      maxComId: 0
     };
   },
   computed: {
     feedID() {
       return this.$route.params.feedID;
     },
+    video() {
+      return this.feed.video;
+    },
     video_file() {
-      return this.feed.video
-        ? `/api/v2/files/${this.feed.video.video_id}`
-        : false;
+      return this.video ? `/api/v2/files/${this.video.video_id}` : false;
     },
     cover_file() {
-      return this.feed.video
-        ? `/api/v2/files/${this.feed.video.video_id}`
-        : false;
+      return this.video ? `/api/v2/files/${this.video.video_id}` : false;
     },
     CURRENTUSER() {
       return this.$store.state.CURRENTUSER;
@@ -223,24 +209,22 @@ export default {
     feedContent() {
       return this.feed.feed_content || "";
     },
-    // 分享第一张图片
-    firstImage() {
-      let images = this.images;
-      if (!images.length) {
-        return "";
-      }
-      const file = images[0] || {};
-      return (
-        this.$http.defaults.baseURL + "/files/" + file.file + "?w=300&h=300"
-      );
-    },
     isWechat() {
       return this.$store.state.BROWSER.isWechat;
+    },
+    has_collect: {
+      get() {
+        return this.feed.has_collect;
+      },
+      set(val) {
+        this.feed.has_collect = val;
+      }
     }
   },
   methods: {
-    replaceURI(str) {
+    formatBody(str) {
       const reg = /(https?|http|ftp|file):\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]/g;
+
       return str
         ? str.replace(
             reg,
@@ -262,15 +246,22 @@ export default {
         .get(`/feeds/${this.feedID}`)
         .then(({ data = {} }) => {
           this.feed = data;
-          this.share.title = data.user.name + "的动态";
-          this.share.desc = data.feed_content;
           this.oldID = this.feedID;
           this.fetching = false;
           this.fetchFeedComments();
           this.fetchRewards();
-          if (this.isWechat) {
-            this.getWeChatConfig();
-          }
+          this.isWechat &&
+            wechatShare(window.location.href, {
+              title: `${data.user.name}的动态`,
+              desc: `${data.feed_content}`,
+              link: window.location.href,
+              imgUrl:
+                data.images.length > 0
+                  ? `${this.$http.defaults.baseURL}/files/${
+                      data.images[0].file
+                    }`
+                  : ""
+            });
         })
         .catch(() => {
           this.$router.back();
@@ -279,21 +270,24 @@ export default {
     fetchFeedComments(after = 0) {
       if (this.fetchComing) return;
       this.fetchComing = true;
-      this.$http
-        .get(`/feeds/${this.feedID}/comments`, {
-          params: {
-            after
-          }
-        })
+      // this.$http.get(`/feeds/${this.feedID}/comments`, {
+      //   params: {
+      //     after
+      //   }
+      // });
+      getFeedComments({ feedId: this.feedID, after })
         .then(({ data: { pinneds = [], comments = [] } }) => {
           pinneds &&
             pinneds.length &&
             (this.pinnedCom = after ? [...this.pinneds, ...pinneds] : pinneds);
-          comments && comments.length
-            ? ((this.comments = after
-                ? [...this.comments, ...comments]
-                : comments),
-              (this.maxComId = comments[comments.length - 1].id))
+          if (comments && comments.length) {
+            (this.comments = after
+              ? [...this.comments, ...comments]
+              : comments),
+              (this.maxComId = comments[comments.length - 1].id);
+          }
+          comments.length === limit
+            ? (this.noMoreCom = false)
             : (this.noMoreCom = true);
           this.$nextTick(() => {
             this.fetchComing = false;
@@ -372,9 +366,28 @@ export default {
     moreAction() {
       const defaultActions = [
         {
-          text: "收藏",
-          method() {
-            console.log("收藏");
+          text: this.has_collect ? "取消收藏" : "收藏",
+          method: () => {
+            // POST /feeds/:feed/collections
+            // DELETE /feeds/:feed/uncollect
+            let url;
+            let txt;
+            let method;
+            this.has_collect
+              ? ((txt = "取消收藏"),
+                (method = "delete"),
+                (url = `/feeds/${this.feedID}/uncollect`))
+              : ((txt = "已加入我的收藏"),
+                (method = "post"),
+                (url = `/feeds/${this.feedID}/collections`));
+            this.$http({
+              url,
+              method,
+              validataStatus: s => s === 204 || s === 201
+            }).then(() => {
+              this.$Message.success(txt);
+              this.has_collect = !this.has_collect;
+            });
           }
         }
       ];
@@ -404,120 +417,6 @@ export default {
           ];
       bus.$emit("actionSheet", [...defaultActions, ...actions], "取消");
     },
-    getWeChatConfig() {
-      const url =
-        window.location.origin +
-        process.env.BASE_URL.substr(0, process.env.BASE_URL.length - 1) +
-        this.$route.fullPath;
-      this.share.link = url;
-      if (this.config.appid === "") {
-        wx.getOauth(url).then(res => {
-          this.config.timestamp = res.timestamp || "";
-          this.config.signature = res.signature || "";
-          this.config.appid = res.appid || "";
-          this.config.noncestr = res.noncestr || "";
-          Wx.config({
-            debug: false,
-            appId: this.config.appid,
-            timestamp: this.config.timestamp,
-            signature: this.config.signature,
-            nonceStr: this.config.noncestr,
-            jsApiList: this.appList
-          });
-          Wx.ready(() => {});
-          Wx.error(() => {
-            // console.log(res);
-          });
-          Wx.onMenuShareTimeline({
-            title: this.share.title,
-            desc: this.share.desc,
-            link: this.share.link,
-            imgUrl: this.firstImage,
-            success: () => {
-              this.shareSuccess();
-            },
-            cancel: () => {
-              this.shareCancel();
-            }
-          });
-          Wx.onMenuShareAppMessage({
-            title: this.share.title,
-            desc: this.share.desc,
-            link: this.share.link,
-            imgUrl: this.firstImage,
-            success: () => {
-              this.shareSuccess();
-            },
-            cancel: () => {
-              this.shareCancel();
-            }
-          });
-          Wx.onMenuShareQQ({
-            title: this.share.title,
-            desc: this.share.desc,
-            link: this.share.link,
-            imgUrl: this.firstImage,
-            success: () => {
-              this.shareSuccess();
-            },
-            cancel: () => {
-              this.shareCancel();
-            }
-          });
-        });
-      } else {
-        this.$Message.success("请使用微信自带分享😳");
-        Wx.config({
-          debug: false,
-          appId: this.config.appid,
-          timestamp: this.config.timestamp,
-          signature: this.config.signature,
-          nonceStr: this.config.noncestr,
-          jsApiList: this.appList
-        });
-
-        Wx.ready(() => {}),
-          Wx.error(() => {
-            // console.log(res);
-          });
-        Wx.onMenuShareTimeline({
-          title: this.share.title,
-          desc: this.share.desc,
-          link: this.share.link,
-          imgUrl: this.firstImage,
-          success: () => {
-            this.shareSuccess();
-          },
-          cancel: () => {
-            this.shareCancel();
-          }
-        });
-        Wx.onMenuShareAppMessage({
-          title: this.share.title,
-          desc: this.share.desc,
-          link: this.share.link,
-          imgUrl: this.firstImage,
-          success: () => {
-            this.shareSuccess();
-          },
-          cancel: () => {
-            this.shareCancel();
-          }
-        });
-        Wx.onMenuShareQQ({
-          title: this.share.title,
-          desc: this.share.desc,
-          link: this.share.link,
-          imgUrl: this.firstImage,
-          success: () => {
-            this.shareSuccess();
-          },
-          cancel: () => {
-            this.shareCancel();
-          }
-        });
-      }
-    },
     replyComment(uid, uname) {
       uid === this.CURRENTUSER.id
         ? bus.$emit(
@@ -545,6 +444,7 @@ export default {
             }
           });
     },
+
     sendComment({ reply_user: replyUser, body }) {
       const params = {};
       if (body && body.length > 0) {
@@ -554,8 +454,10 @@ export default {
           .post(`/feeds/${this.feedID}/comments`, params, {
             validataStatus: s => s === 201
           })
-          .then(() => {
+          .then(({ data: { comment } = { comment: {} } }) => {
             this.$Message.success("评论成功");
+            this.comments.unshift(comment);
+            this.commentCount += 1;
             bus.$emit("commentInput:close", true);
           })
           .catch(() => {
@@ -570,7 +472,10 @@ export default {
   activated() {
     if (this.feedID) {
       this.feedID !== this.oldID
-        ? ((this.components = []), (this.rewardList = []), this.fetchFeed())
+        ? ((this.comments = []),
+          (this.feed = {}),
+          (this.rewardList = []),
+          this.fetchFeed())
         : setTimeout(() => {
             this.loading = false;
           }, 600);
@@ -594,9 +499,16 @@ export default {
 </script>
 <style lang="less">
 .feed-detail-video {
-  width: calc(~"100% + 40px");
+  height: 100vw;
+  width: 100vw;
+  // object-fit: cover;
   margin-left: -20px;
-  height: calc(~"100vh - 185px");
   background: #000;
+}
+.m-art-head {
+  .m-avatar-box-def {
+    width: 52px;
+    height: 52px;
+  }
 }
 </style>

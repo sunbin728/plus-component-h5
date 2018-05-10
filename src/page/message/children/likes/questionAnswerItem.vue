@@ -1,10 +1,10 @@
 <template>
   <section>
     <div :class="`${prefixCls}-item-top`">
-      <v-avatar :sex="user.sex || 1" :src="user.avatar" />
+      <avatar :user="user" />
       <section class="userInfo">
         <span v-if="!user.id" :class="`${prefixCls}-item-top-link`">未知用户 </span>
-        <router-link v-else :class="`${prefixCls}-item-top-link`" :to="`/user/${user._id}`">{{ user.name || "未知用户" }} </router-link>
+        <router-link v-else :class="`${prefixCls}-item-top-link`" :to="`/users/${user._id}`">{{ user.name || "未知用户" }} </router-link>
         <span>赞了你的回答</span>
         <p>{{ like.created_at | time2tips }}</p>
       </section>

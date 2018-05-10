@@ -3,7 +3,8 @@ export default {
   data() {
     return {
       scrollable: true,
-      windowScrollTop: 0
+      windowScrollTop: 0,
+      isCurrentView: false
     };
   },
   watch: {

@@ -9,7 +9,17 @@
             <svg class="m-style-svg m-svg-def">
               <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#base-search"></use>
             </svg>
-            <input @focus="onFocus" @blur="onBlur" v-model="keyword" @input="searchUserByKey" type="search" placeholder="搜索">
+            <!-- input[type=search] 使用 form 标签包裹起来，呼出键盘的enter才会有搜索按钮 -->
+            <form action="#" onsubmit="return false">
+              <input
+                type="search"
+                @blur="onBlur"
+                @focus="onFocus"
+                v-model="keyword"
+                placeholder="搜索"
+                @input="searchUserByKey"
+                @keyup.enter="searchUserByKey" >
+            </form>
           </div>
         </div>
         <div class="m-flex-grow0 m-flex-shrink0">
@@ -18,12 +28,21 @@
       </header>
 
       <main class="m-flex-grow1 m-flex-shrink1 p-search-user-body" style="padding-top: 0.95rem">
-        <load-more v-show="showRec" ref="loadmoreRecs" :on-refresh="fetchRecs">
-          <find-item :user="user" :key="user.id" v-for="user in recs" />          
-        </load-more>
-        <load-more v-show="users.length > 0" :noTranslateAnimation="true" style="margin-top: -40px;" ref="loadmore" :on-load-more="onLoadMore">
-          <find-item :user="user" :key="user.id" v-for="user in users" />          
-        </load-more>
+        <jo-load-more 
+        v-show="showRec"
+        ref="loadmoreRecs"
+        :showBottom="false"
+        :noAnimation="true"
+        @onRefresh="fetchRecs">
+          <user-item :user="user" :key="user.id" v-for="user in recs" />          
+        </jo-load-more>
+        <jo-load-more
+        ref="loadmore"
+        v-show="users.length > 0"
+        @onRefresh="onRefresh"
+        @onLoadMore="onLoadMore">
+          <user-item :user="user" :key="user.id" v-for="user in users" />          
+        </jo-load-more>
         <div v-if="noData" class="placeholder m-no-find"></div>
       </main>
     </div>
@@ -31,12 +50,12 @@
 </template>
 <script>
 import _ from "lodash";
-import FindItem from "./FindItem.vue";
+import UserItem from "@/components/UserItem.vue";
 import { findUserByType, searchUserByKey } from "@/api/user.js";
 export default {
   name: "search-user",
   components: {
-    FindItem
+    UserItem
   },
   data() {
     return {
@@ -65,10 +84,16 @@ export default {
         this.noData = data.length === 0 && this.keyword.length > 0;
       });
     }, 1e3),
-    onLoadMore() {
+    onRefresh(callback) {
+      searchUserByKey(this.keyword).then(({ data }) => {
+        this.users = data;
+        callback(data.length < 15);
+      });
+    },
+    onLoadMore(callback) {
       searchUserByKey(this.keyword, this.users.length).then(({ data }) => {
         this.users = [...this.users, ...data];
-        this.$refs.loadmore.bottomEnd(data.length < 15);
+        callback(data.length < 15);
       });
     },
     onFocus() {
@@ -78,10 +103,10 @@ export default {
     onBlur() {
       this.isFocus = false;
     },
-    fetchRecs() {
+    fetchRecs(callback) {
       findUserByType("recommends").then(({ data }) => {
         this.recs = data;
-        this.$refs.loadmoreRecs.topEnd(!(data.length < 15));
+        callback(data.length < 15);
       });
     }
   }
@@ -90,9 +115,9 @@ export default {
 
 <style lang="less">
 .p-search-user {
+  z-index: 100;
   background-color: #f4f5f6;
   animation-duration: 0.3s;
-  z-index: 100;
   header {
     padding: 20px 30px;
     bottom: initial;
@@ -103,7 +128,6 @@ export default {
   .p-search-user-body {
     overflow-y: auto;
   }
-
   .m-no-find {
     width: 100vw;
     height: 100vh;

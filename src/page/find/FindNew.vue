@@ -1,19 +1,19 @@
 <template>
-  <load-more
+  <jo-load-more
   key="find-new"
   ref="loadmore"
-  :onRefresh="onRefresh"
-  :onLoadMore="onLoadMore">
-    <find-item v-for="user in users" :user="user" :key="user.id"></find-item>
-  </load-more>
+  @onRefresh="onRefresh"
+  @onLoadMore="onLoadMore">
+    <user-item v-for="user in users" :user="user" :key="user.id"></user-item>
+  </jo-load-more>
 </template>
 <script>
-import findItem from "./FindItem.vue";
+import UserItem from "@/components/UserItem.vue";
 import { findUserByType } from "@/api/user.js";
 export default {
   name: "find-pop",
   components: {
-    findItem
+    UserItem
   },
   data() {
     return {
@@ -21,21 +21,20 @@ export default {
     };
   },
   methods: {
-    onRefresh() {
+    onRefresh(callback) {
       findUserByType("latests").then(({ data: users } = {}) => {
         users && (this.users = users);
-        this.$refs.loadmore.topEnd(!(users.length < 15));
+        callback(users.length < 15);
       });
     },
-    onLoadMore() {
+    onLoadMore(callback) {
       findUserByType("latests", {
         offset: this.users.length
       }).then(({ data: users }) => {
         this.users = [...this.users, ...users];
-        this.$refs.loadmore.bottomEnd(users.length < 15);
+        callback(users.length < 15);
       });
     }
-  },
-  mounted() {}
+  }
 };
 </script>

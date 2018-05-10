@@ -134,8 +134,9 @@ export default {
           // 保存用户信息 并跳转
           this.$store.commit("SAVE_CURRENTUSER", { ...user, token });
           this.$nextTick(() => {
-            this.$router.push("/feed/new");
+            this.$router.push("/feeds?type=hot");
             this.$store.dispatch("GET_UNREAD_COUNT");
+            this.$store.dispatch("GET_NEW_UNREAD_COUNT");
             this.$store.commit("SAVE_USER", user);
             this.$lstore.removeData("H5_WECHAT_MP_OPENID");
             this.$lstore.removeData("H5_WECHAT_MP_ASTOKEN");

@@ -1,6 +1,7 @@
 <template>
   <router-link
-  :to="path" 
+  @click.native.stop
+  :to="path"
   class="m-flex-shrink0 m-flex-grow0 m-avatar-box"
   :class="styles" >
     <img v-if="avatar" :src="avatar" @error="handelError" class="m-avatar-img">
@@ -39,7 +40,9 @@ export default {
     },
     styles() {
       const sex = ["secret", "man", "woman"];
-      return [`m-avatar-box-${this.size}`, `m-avatar-box-${sex[this.sex]}`];
+      return this.avatar
+        ? [`m-avatar-box-${this.size}`]
+        : [`m-avatar-box-${this.size}`, `m-avatar-box-${sex[this.sex]}`];
     },
     avatar: {
       get() {

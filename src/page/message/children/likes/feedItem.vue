@@ -1,22 +1,23 @@
 <template>
   <section>
     <div :class="`${prefixCls}-item-top`">
-      <v-avatar :sex="user.sex || 1" :src="user.avatar" />
+      <avatar :user="user" />
       <section class="userInfo">
-        <span v-if="!user.id" :class="`${prefixCls}-item-top-link`">未知用户 </span>
-        <router-link :class="`${prefixCls}-item-top-link`" :to="`/user/${user._id}`">{{ user.name }}</router-link>
-        <span>赞了你的动态</span>
+        <span v-if="!user.id" :class="`${prefixCls}-item-top-link`">未知用户</span>
+        <router-link :class="`${prefixCls}-item-top-link`" :to="`/users/${user._id}`">{{ user.name }}</router-link>
+        <span> 赞了你的动态</span>
         <p>{{ like.created_at | time2tips }}</p>
       </section>
     </div>
     <div :class="`${prefixCls}-item-bottom`">
       <section v-if="like.likeable !== null" @click="goToFeedDetail()">
-        <div :class="`${prefixCls}-item-bottom-noImg`" class="content" v-if="!getImage">
+        <div :class="`${prefixCls}-item-bottom-noImg`" class="content" v-if="!getImage && !getVideo">
           {{ like.likeable.feed_content }}
         </div>
         <div :class="`${prefixCls}-item-bottom-img`" v-else>
           <div class="img">
-            <img :src="getImage" :alt="user.name">
+            <img v-if="getImage" :src="getImage" :alt="user.name" />
+            <img v-if="getVideo" :src="getVideo.cover" :alt="user.name" />
           </div>
           <div class="content">
             {{ like.likeable.feed_content }}
@@ -49,7 +50,7 @@ export default {
      */
     goToFeedDetail() {
       const { likeable: { id = 0 } } = this.like;
-      this.$router.push(`/feed/${id}`);
+      this.$router.push(`/feeds/${id}`);
     }
   },
   computed: {
@@ -68,6 +69,17 @@ export default {
         return `/api/v2/files/${img.id}`;
       }
 
+      return false;
+    },
+    getVideo() {
+      const { like } = this.$props;
+      const video = like.likeable.video;
+      if (video !== null) {
+        return {
+          video: `/api/v2/files/${video.video_id}`,
+          cover: `/api/v2/files/${video.cover_id}`
+        };
+      }
       return false;
     },
     user() {

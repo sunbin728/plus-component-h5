@@ -2,14 +2,14 @@
   <div :class="`${prefixCls}-status`">
       <section v-if="audit.audit_at">
         <section class="gray"  v-if="audit.status === 1">
-          已同意
+          同意加入
         </section>
-        <section class="red" v-else>
-          已拒绝
+        <section class="gray" v-else>
+          拒绝加入
         </section>
       </section>
       <section @click="showOperations(audit)" class="green" v-else>
-        待审核
+        <span class="audit-operation">审核</span>
       </section>
   </div>
 </template>
@@ -39,7 +39,7 @@ export default {
       this.$Modal.remove();
       this.$http
         .patch(
-          `/plus-group/groups/${group}/members/${member}/audit`,
+          `/plus-group/currency-groups/${group}/members/${member}/audit`,
           {
             status: 1
           },
@@ -67,7 +67,7 @@ export default {
       this.$Modal.remove();
       this.$http
         .patch(
-          `/plus-group/groups/${group}/members/${member}/audit`,
+          `/plus-group/currency-groups/${group}/members/${member}/audit`,
           {
             status: 2
           },

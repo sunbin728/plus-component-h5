@@ -1,17 +1,18 @@
 <template>
-  <div :class="`${prefixCls}-status`">
-    <section v-if="audit.comment != null">
-      <section class="gray" v-if="audit.expires_at != null">
-        已处理
-      </section>
-      <section class="green" v-else @click="showOperations(audit)" >
-        待审核
-      </section>
-    </section>
-    <section class="red" v-if="audit.comment == null">
-      该评论已被删除
-    </section>
-  </div>
+    <div :class="`${prefixCls}-status`">
+        <section v-if="audit.comment != null">
+            <section class="gray" v-if="audit.expires_at != null">
+                <span class="amount-show">{{audit.amount}}积分 / {{audit.day}}天</span>已审核
+            </section>
+            <section class="green" v-else @click="showOperations(audit)">
+                <span class="audit-show">{{audit.amount}}积分 / {{audit.day}}天</span>
+                <span class="audit-operation">审核</span>
+            </section>
+        </section>
+        <section class="red" v-if="audit.comment == null">
+            该评论已被删除
+        </section>
+    </div>
 </template>
 <script>
 /**
@@ -42,9 +43,12 @@ export default {
       } = currentItem;
       this.$Modal.remove();
       this.$http
-        .patch(`/feeds/${feedId}/comments/${commentId}/pinneds/${pinnedId}`, {
-          validateStatus: s => s === 201
-        })
+        .patch(
+          `/feeds/${feedId}/comments/${commentId}/currency-pinneds/${pinnedId}`,
+          {
+            validateStatus: s => s === 201
+          }
+        )
         .then(({ data }) => {
           this.audit.expires_at = 1;
           this.$Message.success(data);
@@ -63,7 +67,7 @@ export default {
       const { id: pinnedId = 0 } = currentItem;
       this.$Modal.remove();
       this.$http
-        .delete(`/user/feed-comment-pinneds/${pinnedId}`, {
+        .delete(`/user/feed-comment-currency-pinneds/${pinnedId}`, {
           validateStatus: s => s === 201
         })
         .then(({ data }) => {

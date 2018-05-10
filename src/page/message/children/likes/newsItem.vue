@@ -1,11 +1,11 @@
 <template>
   <section>
     <div :class="`${prefixCls}-item-top`">
-      <v-avatar :sex="user.sex" :src="user.avatar" />
+      <avatar :user="user" />
       <section class="userInfo">
         <span v-if="!user.id" :class="`${prefixCls}-item-top-link`">未知用户 </span>
-        <router-link :class="`${prefixCls}-item-top-link`" :to="`/user/${user._id}`">{{ user.name }}</router-link>
-        <span>赞了你的文章</span>
+        <router-link :class="`${prefixCls}-item-top-link`" :to="`/users/${user._id}`">{{ user.name }}</router-link>
+        <span>赞了你的资讯</span>
         <p>{{ like.created_at | time2tips }}</p>
       </section>
     </div>
@@ -26,7 +26,7 @@
       </section>
       <section v-if="like.likeable === null">
         <div :class="`${prefixCls}-item-bottom-noImg`" class="content">
-          该文章已被删除
+          资讯已被删除
         </div>
       </section>
     </div>

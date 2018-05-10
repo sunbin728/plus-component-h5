@@ -2,6 +2,7 @@
   <article-card
   :liked="liked"
   :loading="loading"
+  :canOprate="news.audit_status===0"
   @on-like="likeNews"
   @on-share="shareNews"
   @on-more="moreAction"
@@ -19,7 +20,7 @@
       <div class="m-art-body" v-html='body'></div>
       <div class="m-box m-aln-center m-justify-bet m-art-foot">
         <div class="m-flex-grow1 m-flex-shrink1 m-box m-aln-center m-art-like-list">
-          <template v-if='likeCount > 0'>
+          <template v-if='likeCount > 0 && audit_status===0'>
             <ul class="m-box m-flex-grow0 m-flex-shrink0">
               <li 
               :key="id"
@@ -48,17 +49,19 @@
         <li>{{ commentCount | formatNum }}条评论</li>
       </ul>
       <comment-item 
+        v-if="news.audit_status===0"
         v-for="(comment) in pinnedCom"
         :pinned="true"
-        :key="comment.id"
+        :key="`pinned-${comment.id}`"
         :comment="comment"/>
       <comment-item
+        v-if="news.audit_status===0"
         @click="replyComment"
         v-for="(comment) in comments"
-        :key="comment.id"
+        :key="`comment-${comment.id}`"
         :comment="comment"/>
 
-        <div class="m-box m-aln-center m-justify-center load-more-box">
+        <div v-if="news.audit_status===0" class="m-box m-aln-center m-justify-center load-more-box">
           <span v-if="noMoreCom" class="load-more-ph">---没有更多---</span>
           <span v-else class="load-more-btn" @click.stop="fetchNewsComments(maxComId)">
             {{fetchComing ? "加载中..." : "点击加载更多"}}
@@ -195,7 +198,7 @@ export default {
             this.fetchNewsLikes();
           }, 800);
           if (this.isWechat) {
-            this.getWeChatConfig();
+            this.getWeChatConfig(this.news.title, this.news.subject);
           }
         })
         .catch(err => {
@@ -203,14 +206,14 @@ export default {
           this.$router.back();
         });
     },
-    getWeChatConfig() {
-      const url =
+    getWeChatConfig(title = "", desc = "") {
+      const link =
         window.location.origin +
         process.env.BASE_URL.substr(0, process.env.BASE_URL.length - 1) +
         this.$route.fullPath;
-      this.share.link = url;
+      const imgUrl = this.firstImage;
       if (this.config.appid === "") {
-        wx.getOauth(url).then(res => {
+        wx.getOauth(link).then(res => {
           this.config.timestamp = res.timestamp || "";
           this.config.signature = res.signature || "";
           this.config.appid = res.appid || "";
@@ -223,45 +226,46 @@ export default {
             nonceStr: this.config.noncestr,
             jsApiList: this.appList
           });
-          Wx.ready(() => {});
+          Wx.ready(() => {
+            Wx.onMenuShareTimeline({
+              title,
+              desc,
+              link,
+              imgUrl,
+              success: () => {
+                this.shareSuccess();
+              },
+              cancel: () => {
+                this.shareCancel();
+              }
+            });
+            Wx.onMenuShareAppMessage({
+              title,
+              desc,
+              link,
+              imgUrl,
+              success: () => {
+                this.shareSuccess();
+              },
+              cancel: () => {
+                this.shareCancel();
+              }
+            });
+            Wx.onMenuShareQQ({
+              title,
+              desc,
+              link,
+              imgUrl,
+              success: () => {
+                this.shareSuccess();
+              },
+              cancel: () => {
+                this.shareCancel();
+              }
+            });
+          });
           Wx.error(() => {
             // console.log(res);
-          });
-          Wx.onMenuShareTimeline({
-            title: this.share.title,
-            desc: this.share.desc,
-            link: this.share.link,
-            imgUrl: this.firstImage,
-            success: () => {
-              this.shareSuccess();
-            },
-            cancel: () => {
-              this.shareCancel();
-            }
-          });
-          Wx.onMenuShareAppMessage({
-            title: this.share.title,
-            desc: this.share.desc,
-            link: this.share.link,
-            imgUrl: this.firstImage,
-            success: () => {
-              this.shareSuccess();
-            },
-            cancel: () => {
-              this.shareCancel();
-            }
-          });
-          Wx.onMenuShareQQ({
-            title: this.share.title,
-            desc: this.share.desc,
-            link: this.share.link,
-            imgUrl: this.firstImage,
-            success: () => {
-              this.shareSuccess();
-            },
-            cancel: () => {
-              this.shareCancel();
-            }
           });
         });
       } else {
@@ -275,46 +279,45 @@ export default {
           jsApiList: this.appList
         });
 
-        Wx.ready(() => {}),
-          Wx.error(() => {
-            // console.log(res);
+        Wx.ready(() => {
+          Wx.onMenuShareTimeline({
+            title,
+            desc,
+            link,
+            imgUrl,
+            success: () => {
+              this.shareSuccess();
+            },
+            cancel: () => {
+              this.shareCancel();
+            }
           });
-        Wx.onMenuShareTimeline({
-          title: this.share.title,
-          desc: this.share.desc,
-          link: this.share.link,
-          imgUrl: this.firstImage,
-          success: () => {
-            this.shareSuccess();
-          },
-          cancel: () => {
-            this.shareCancel();
-          }
+          Wx.onMenuShareAppMessage({
+            title,
+            desc,
+            link,
+            imgUrl,
+            success: () => {
+              this.shareSuccess();
+            },
+            cancel: () => {
+              this.shareCancel();
+            }
+          });
+          Wx.onMenuShareQQ({
+            title,
+            desc,
+            link,
+            imgUrl,
+            success: () => {
+              this.shareSuccess();
+            },
+            cancel: () => {
+              this.shareCancel();
+            }
+          });
         });
-        Wx.onMenuShareAppMessage({
-          title: this.share.title,
-          desc: this.share.desc,
-          link: this.share.link,
-          imgUrl: this.firstImage,
-          success: () => {
-            this.shareSuccess();
-          },
-          cancel: () => {
-            this.shareCancel();
-          }
-        });
-        Wx.onMenuShareQQ({
-          title: this.share.title,
-          desc: this.share.desc,
-          link: this.share.link,
-          imgUrl: this.firstImage,
-          success: () => {
-            this.shareSuccess();
-          },
-          cancel: () => {
-            this.shareCancel();
-          }
-        });
+        Wx.error(() => {});
       }
     },
     fetchNewsLikes() {

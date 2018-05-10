@@ -78,6 +78,9 @@ body,
 .m-aln-end {
   align-items: flex-end;
 }
+.m-aln-stre {
+  align-items: stretch;
+}
 .m-justify-bet {
   justify-content: space-between;
 }
@@ -163,21 +166,27 @@ body,
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  // autoprefixer: off
   -webkit-box-orient: vertical;
+  // autoprefixer: on
 }
 .m-text-cut-3 {
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  // autoprefixer: off
   -webkit-box-orient: vertical;
+  // autoprefixer: on
 }
 .m-text-cut-4 {
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 4;
+  // autoprefixer: off
   -webkit-box-orient: vertical;
+  // autoprefixer: on
 }
 .m-text-box {
   word-wrap: break-word;
@@ -300,6 +309,11 @@ input[type="search"]::-webkit-search-cancel-button {
   height: 32px;
 }
 
+.m-svg-small {
+  width: 26px;
+  height: 26px;
+}
+
 .m-svg-big {
   width: 48px;
   height: 48px;
@@ -400,6 +414,14 @@ input[type="search"]::-webkit-search-cancel-button {
   }
   &-wrap {
   }
+}
+
+/* 自定义输入框 */
+.m-textarea {
+  outline: 0;
+  border: 0;
+  line-height: 1.415;
+  word-break: break-all;
 }
 
 /* vue transition */

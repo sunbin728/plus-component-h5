@@ -1,5 +1,4 @@
 import NotFound from "../page/notFound";
-import UserHome from "@/page/UserHome.vue";
 import baseRoutes from "./base.js";
 import feedRoutes from "./feed.js";
 import newsRoutes from "./news.js";
@@ -8,21 +7,7 @@ import postRoutes from "./post.js";
 import groupRoutes from "./group.js";
 import messageRoutes from "./message.js";
 import questionRoutes from "./question.js";
-/* eslint-disable one-var */
-const /* 公共页面 */
-
-  // 用户标签选择
-  chooseTags = () =>
-    import(/* webpackChunkName: 'common' */ "../page/common/chooseTags"),
-  // 定位选择
-  chooseLocation = () =>
-    import(/* webpackChunkName: 'common' */ "../page/common/chooseLocation"),
-  // 搜索用户
-  searchUser = () =>
-    import(/* webpackChunkName: 'common' */ "../page/common/searchUser"),
-  postGroupFeed = () =>
-    import(/* webpackChunkName: 'common' */ "../page/common/postGroupFeed/");
-
+import profileRoutes from "./profile.js";
 /**
  * 钱包页面
  * @auth:  jsonleex <jsonleex@163.com>
@@ -49,9 +34,6 @@ const WalletWithdraw = () =>
 const WalletDetail = () =>
   import(/* webpackChunkName: 'wallet' */ "@/page/wallet/WalletDetail");
 
-const UserFans = () =>
-  import(/* webpackChunkName: 'user' */ "@/page/user/UserFans");
-
 const router = [
   /* 基础入口 */
   { path: "/", redirect: "/signin" },
@@ -64,13 +46,7 @@ const router = [
   ...groupRoutes,
   ...messageRoutes,
   ...questionRoutes,
-
-  /**
-   * 消息页面路由
-   */
-  /**
-   * 消息页面路由结束
-   */
+  ...profileRoutes,
 
   {
     path: "/wallet",
@@ -101,52 +77,16 @@ const router = [
       title: "明细"
     }
   },
-
-  /* 公共页面 */
-
-  {
-    path: "/user/:userID(\\d+)",
-    component: UserHome,
-    meta: {
-      title: "个人主页",
-      keepAlive: true
-    }
-  } /* 个人主页 */,
-  {
-    path: "/user/:userID(\\d+)/fans",
-    component: UserFans,
-    meta: {
-      title: "粉丝",
-      keepAlive: true,
-      requiresAuth: true
-    }
-  },
-  {
-    path: "/search_user/",
-    component: searchUser,
-    meta: { title: "搜索用户", keepAlive: true }
-  } /* 搜索用户 */,
-  {
-    path: "/tags",
-    component: chooseTags,
-    meta: { title: "选择标签" }
-  } /* 选择标签 */,
-  {
-    path: "/location",
-    component: chooseLocation,
-    meta: { title: "选择位置" }
-  } /* 定位 */,
-
-  {
-    path: "/post/fatie",
-    name: "postGroupFeed",
-    component: postGroupFeed,
-    meta: {
-      keepAlive: true,
-      title: "发布帖子",
-      requiresAuth: true
-    }
-  },
+  // {
+  //   path: "/post/fatie",
+  //   name: "postGroupFeed",
+  //   component: postGroupFeed,
+  //   meta: {
+  //     keepAlive: true,
+  //     title: "发布帖子",
+  //     requiresAuth: true
+  //   }
+  // },
   { path: "*", component: NotFound } /* 404 页面 */
 ];
 

@@ -2,8 +2,8 @@
   <div :class="`${prefixCls}`">
     <ul class="entry__group padding">
       <router-link v-for="item in system" tag='li' class="entry__item" :key="item.url" :to='item.url'>
-        <div :style="`background-color: ${item.bgColor}; border-radius: 100%`">
-          <svg class='entry__item--prepend'>
+        <div>
+          <svg >
             <use xmlns:xlink="http://www.w3.org/1999/xlink" :xlink:href="`#${item.icon}`"></use>
           </svg>
         </div>
@@ -12,7 +12,11 @@
           <p>{{ computedGetter(item.placeholder) }}</p>
         </div>
         <div :class="`${prefixCls}-time`">
-          <h5 v-if="computedGetter(item.time) !== '' && item.time">{{ (computedGetter(item.time)) || '' | time2tips }}</h5>
+          <h5 
+            v-if="computedGetter(item.time) !== '' && item.time"
+          >
+            {{ (computedGetter(item.time)) || '' | time2tips }}
+          </h5>
           <h5 v-else></h5>
           <span :class="`${prefixCls}-time-count`" v-if="computedGetter(item.count) !== 0">{{ computedGetter(item.count) }}</span>
         </div>
@@ -33,40 +37,36 @@ export default {
         system: {
           title: "系统消息",
           placeholder: "sPlaceholder",
-          icon: "message-likes",
+          icon: "message-tongzhi",
           hanBadge: 0,
           url: "/message/notification",
-          bgColor: "#59b6d7",
           count: "sCount",
           time: "sTime"
         },
         comments: {
           title: "评论的",
           placeholder: "cPlaceholder",
-          icon: "message-comments",
+          icon: "message-pinglun",
           hanBadge: 0,
           url: "/message/comments",
-          bgColor: "#59b6d7",
           count: "cCount",
           time: "cTime"
         },
         diggs: {
           title: "赞过的",
           placeholder: "dPlaceholder",
-          icon: "message-likes",
+          icon: "message-zan",
           hanBadge: 0,
           url: "/message/likes",
-          bgColor: "#fe8f90",
           count: "dCount",
           time: "dTime"
         },
         audits: {
           title: "审核",
           placeholder: "aPlaceholder",
-          icon: "msg-error",
+          icon: "message-shenghe",
           hanBadge: 0,
           url: "/message/audits/feedcomments",
-          bgColor: "#fbb12a",
           count: "aCount"
         }
       }
@@ -81,16 +81,10 @@ export default {
   computed: {
     ...mapState({
       msg: state => state.MESSAGE.UNREAD_COUNT.msg,
-      notification: state => state.MESSAGE.UNREAD_COUNT.notification
+      newMsg: state => state.MESSAGE.NEW_UNREAD_COUNT,
+      sCount: state => state.MESSAGE.NEW_UNREAD_COUNT.system || 0
     }),
 
-    // 新消息提示
-    has_msg() {
-      return (
-        this.msg.audits.count + this.msg.comments.count + this.msg.diggs.count >
-        0
-      );
-    },
     cPlaceholder() {
       return this.msg.comments.placeholder;
     },
@@ -98,10 +92,10 @@ export default {
       return this.msg.diggs.placeholder;
     },
     aPlaceholder() {
-      return this.msg.audits.placeholder;
+      return this.aCount ? "你有未审核的信息请及时处理" : "没有未审核的申请";
     },
     sPlaceholder() {
-      return "系统通知";
+      return this.msg.system.placeholder;
     },
     cTime() {
       return this.msg.comments.time;
@@ -110,25 +104,22 @@ export default {
       return this.msg.diggs.time;
     },
     sTime() {
-      return "";
+      return this.msg.system.time;
     },
     cCount() {
-      return this.msg.comments.count;
+      return this.newMsg.commented || 0;
     },
     dCount() {
-      return this.msg.diggs.count;
+      return this.newMsg.liked || 0;
     },
     aCount() {
       return (
-        this.msg.audits.feedCommentCount +
-        this.msg.audits.groupJoinCount +
-        this.msg.audits.groupPostCommentCount +
-        this.msg.audits.groupPostCount +
-        this.msg.audits.newsCommentCount
+        ~~this.newMsg["feed-comment-pinned"] +
+        ~~this.newMsg["news-comment-pinned"] +
+        ~~this.newMsg["post-comment-pinned"] +
+        ~~this.newMsg["post-pinned"] +
+        ~~this.newMsg["group-join-pinned"]
       );
-    },
-    sCount() {
-      return 0;
     }
   },
 

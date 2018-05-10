@@ -1,7 +1,7 @@
 <template>
   <div class="p-find-person">
     <header class="m-pos-f m-box m-aln-center m-justify-bet m-lim-width m-bb1 m-main m-head-top">
-      <div class="m-flex-grow0 m-flex-shrink0">
+      <div class="m-box m-aln-center m-flex-grow0 m-flex-shrink0">
         <svg class="m-style-svg m-svg-def" @click="goBack">
           <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#base-back"></use>
         </svg>
@@ -13,8 +13,8 @@
         <span class="placeholder">搜索</span>
       </div>
       <div class="m-box m-aln-center m-flex-grow0 m-flex-shrink0 m-justify-end m-location" @click="switchLocation">
-        <svg class="m-style-svg m-svg-def">
-          <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#find-location"></use>
+        <svg class="m-style-svg" :class="loading?'m-svg-small':'m-svg-def'">
+          <use :xlink:href="loading ? `#base-loading` : `#find-location`"></use>
         </svg>
         <span class="m-location-label m-text-cut">{{ location }}</span>
       </div>
@@ -45,13 +45,24 @@ import { getCurrentPosition } from "@/api/bootstrappers.js";
 export default {
   name: "find",
   data() {
-    return {};
+    return {
+      loading: false
+    };
   },
   computed: {
+    POSITION() {
+      return this.$store.state.POSITION || { label: "" };
+    },
     location() {
-      const pos = this.$store.POSITION || {};
-      return pos.label || "选择城市";
+      const { label = "" } = this.POSITION;
+      // label.length > 5
+      //   ? `${label.slice(0, 2)}…${label.slice(-2)}`
+      //   :
+      return label || "选择城市";
     }
+  },
+  created() {
+    this.getCurrentPosition();
   },
   methods: {
     goBack() {
@@ -65,6 +76,7 @@ export default {
     },
     getCurrentPosition() {
       this.$lstore.hasData("H5_CURRENT_POSITION") ||
+        ((this.loading = true),
         getCurrentPosition().then(
           data => {
             this.$store.commit("SAVE_H5_POSITION", data);
@@ -72,9 +84,9 @@ export default {
           },
           err => {
             this.loading = false;
-            this.$Message.error("定位失败，请手动选择城市");
+            this.$Message.error(err.message);
           }
-        );
+        ));
     }
   }
 };
@@ -84,6 +96,7 @@ export default {
 .p-find-person {
   .m-sub-nav {
     top: 90px;
+    bottom: initial;
     padding: 0 30px;
     &-item {
       display: flex;
@@ -105,6 +118,11 @@ export default {
   }
   .p-find-main {
     color: inherit;
+  }
+  .p-find-body {
+    .jo-loadmore-head {
+      top: 90px;
+    }
   }
 }
 .m-head-search-box {
@@ -132,7 +150,15 @@ export default {
     width: 42px;
     height: 42px;
   }
+
+  .m-svg-small {
+    width: 30px;
+    height: 30px;
+    color: #d1d1d1;
+  }
+
   &-label {
+    margin-left: 5px;
     display: inline-block;
     max-width: 5 * 24px;
   }

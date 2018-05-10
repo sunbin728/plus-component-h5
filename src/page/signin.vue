@@ -69,7 +69,7 @@
           </button>
         </div>
         <div class="m-box m-aln-center m-justify-bet other-link">
-          <router-link tag="span" to="/feed/new">
+          <router-link tag="span" to="/feeds?type=hot">
             <a>不登录，先随便逛逛</a>
           </router-link>
           <router-link tag="span" to="/forgot">
@@ -103,7 +103,7 @@
   </transition>
 </template>
 <script>
-import bus from "@/bus.js";
+import { signinByAccount } from "@/api/user.js";
 import { signinByWechat } from "@/util/wechat.js";
 
 export default {
@@ -143,33 +143,16 @@ export default {
 
       this.loading = true;
 
-      this.$http
-        .post("/tokens", {
-          login: this.account,
-          password: this.password,
-          device_code: this.$store.state.BROWSER.OS,
-          validateStatus: s => s === 201
-        })
-        .then(({ data: { token, user } }) => {
-          token &&
-            (this.$store.commit("SAVE_CURRENTUSER", {
-              ...user,
-              token
-            }),
-            bus.$emit("connect-easemob"),
-            this.$store.commit("SAVE_USER", user),
-            this.$store.dispatch("GET_UNREAD_COUNT"),
-            this.$nextTick(() => {
-              this.$router.push(this.$route.query.redirect || "/feed/new");
-              this.loading = false;
-            }));
-        })
-        .catch(err => {
-          console.log(err);
-          const { response: { data = { message: "登录失败" } } = {} } = err;
-          this.err = data;
-          this.loading = false;
-        });
+      signinByAccount({
+        login: this.account,
+        password: this.password
+      }).then(state => {
+        this.loading = false;
+        state &&
+          this.$nextTick(() => {
+            this.$router.push(this.$route.query.redirect || "/feeds?type=hot");
+          });
+      });
     }
   }
 };

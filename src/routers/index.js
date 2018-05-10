@@ -38,12 +38,12 @@ const router = new VueRouter({
  *
  */
 router.beforeEach((to, from, next) => {
-  const logged = !!(window.$lstore.getData("CURRENTUSER") || {}).token;
+  const logged = !!window.$lstore.hasData("H5_ACCESS_TOKEN");
   const forGuest = to.matched.some(record => record.meta.forGuest);
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
 
   if (logged) {
-    forGuest ? next({ path: "/feed/new" }) : next();
+    forGuest ? next({ path: "/feeds?type=hot" }) : next();
   } else {
     forGuest
       ? next()

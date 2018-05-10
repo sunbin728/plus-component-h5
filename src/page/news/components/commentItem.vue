@@ -3,20 +3,17 @@
     <div class="card-wrap">
       <div class="card-main">
         <div class="m-box">
-          <v-avatar
-          :sex='user.sex'
-          :src='user.avatar'
-          :uid='user.id' />
+          <avatar :user="user" />
           <div class="m-box-dir m-box-col card-txt-body">
             <div class="m-box m-box-c">
-              <router-link tag='h4' :to='`/user/${user.id}`'>{{ user.name }}</router-link>
+              <router-link tag='h4' :to='`/users/${user.id}`'>{{ user.name }}</router-link>
               <div class="m-box m-box-c">
                 <i class="pinned-icon" v-if='pinned'></i>
                 <span class="time">{{ time | time2tips }}</span>
               </div>
             </div>
             <div class="m-text-box">
-              <span v-if='reply'>回复<router-link :to='`/user/${reply.id}`'>{{ reply.name }}</router-link>:</span>
+              <span v-if='reply'>回复<router-link :to='`/users/${reply.id}`'>{{ reply.name }}</router-link>:</span>
               {{ body }}
             </div>
           </div>
@@ -60,7 +57,7 @@ export default {
 .card {
   background-color: #fff;
   border-top: 1px solid #ededed; /*no*/
-  .v-avatar {
+  .m-avatar-box {
     margin-right: 30px;
   }
   &-wrap {
